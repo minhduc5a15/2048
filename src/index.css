@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+
+@theme {
+    --color-bg-color: #bbada0;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background-color: var(--color-bg-color);
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
