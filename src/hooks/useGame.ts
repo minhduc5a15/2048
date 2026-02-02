@@ -162,7 +162,6 @@ export const useGame = () => {
                         try {
                             const { bitboardHex, score } = JSON.parse(savedData);
                             if (bitboardHex && typeof score === 'number' && board.current.restoreState) {
-                                console.log('Restoring game state:', bitboardHex);
                                 board.current.restoreState(bitboardHex, score);
                             }
                         } catch (e) {
