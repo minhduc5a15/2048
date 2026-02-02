@@ -18,12 +18,7 @@ export const Tile = ({ tile, isFastMode = false }: TileProps) => {
     const color = Theme.getTextColor(tile.val);
 
     // Responsive font size
-    const fontSize =
-        tile.val < 100
-            ? 'clamp(30px, 8vw, 55px)'
-            : tile.val < 1000
-              ? 'clamp(24px, 6vw, 45px)'
-              : 'clamp(18px, 5vw, 35px)';
+    const fontSize = tile.val < 100 ? 'clamp(30px, 8vw, 55px)' : tile.val < 1000 ? 'clamp(24px, 6vw, 45px)' : 'clamp(18px, 5vw, 35px)';
 
     const isMerged = tile.isMerged;
     const isNew = tile.isNew;
@@ -58,9 +53,7 @@ export const Tile = ({ tile, isFastMode = false }: TileProps) => {
                     // If merged, pop effect. If deleting, shrink.
                 },
             }}
-            className={clsx(
-                'absolute flex items-center justify-center rounded-md font-bold select-none shadow-sm'
-            )}
+            className={clsx('absolute flex items-center justify-center rounded-md font-bold select-none shadow-sm')}
             style={{
                 width: '22.5%',
                 height: '22.5%',

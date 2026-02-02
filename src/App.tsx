@@ -5,8 +5,7 @@ import { Direction } from './constants';
 import { useSwipe } from './hooks/useSwipe';
 
 function App() {
-    const { tiles, floatingTexts, score, highScore, gameOver, move, reset, autoMove, isReady } =
-        useGame();
+    const { tiles, floatingTexts, score, highScore, gameOver, move, reset, autoMove, isReady } = useGame();
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
     const autoPlayTimer = useRef<number | null>(null);
     const { handleTouchStart, handleTouchEnd } = useSwipe(move);
@@ -33,12 +32,7 @@ function App() {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (gameOver) return;
             // Stop auto play on manual intervention
-            if (
-                isAutoPlaying &&
-                ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(
-                    e.key
-                )
-            ) {
+            if (isAutoPlaying && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key)) {
                 setIsAutoPlaying(false);
             }
 
@@ -91,27 +85,19 @@ function App() {
                 {/* Header */}
                 <div className="flex flex-row justify-between items-start mb-4 gap-2">
                     <div className="flex flex-col justify-between h-full">
-                        <h1 className="text-5xl sm:text-6xl font-extrabold text-[#776e65] mb-0 drop-shadow-sm tracking-tighter leading-none">
-                            2048
-                        </h1>
+                        <h1 className="text-5xl sm:text-6xl font-extrabold text-[#776e65] mb-0 drop-shadow-sm tracking-tighter leading-none">2048</h1>
                         <p className="text-[#776e65] font-medium text-sm sm:text-base mt-2">
                             Join the numbers to get <br className="hidden sm:block" />
-                            <strong className="text-[#8f7a66] underline decoration-2 underline-offset-2">
-                                2048!
-                            </strong>
+                            <strong className="text-[#8f7a66] underline decoration-2 underline-offset-2">2048!</strong>
                         </p>
                     </div>
                     <div className="flex gap-2 self-start">
                         <div className="bg-[#bbada0] rounded-md p-1.5 min-w-[65px] text-center text-white shadow-inner border-b-2 border-[#a0948a]">
-                            <div className="text-[10px] font-bold uppercase text-[#eee4da] tracking-widest">
-                                Score
-                            </div>
+                            <div className="text-[10px] font-bold uppercase text-[#eee4da] tracking-widest">Score</div>
                             <div className="text-lg font-bold leading-tight">{score}</div>
                         </div>
                         <div className="bg-[#bbada0] rounded-md p-1.5 min-w-[65px] text-center text-white shadow-inner border-b-2 border-[#a0948a]">
-                            <div className="text-[10px] font-bold uppercase text-[#eee4da] tracking-widest">
-                                Best
-                            </div>
+                            <div className="text-[10px] font-bold uppercase text-[#eee4da] tracking-widest">Best</div>
                             <div className="text-lg font-bold leading-tight">{highScore}</div>
                         </div>
                     </div>
@@ -119,9 +105,7 @@ function App() {
 
                 {/* Controls */}
                 <div className="flex justify-between items-center mb-4 gap-2">
-                    <p className="text-[#776e65] text-xs sm:text-sm font-medium opacity-80">
-                        Join the tiles, get to 2048!
-                    </p>
+                    <p className="text-[#776e65] text-xs sm:text-sm font-medium opacity-80">Join the tiles, get to 2048!</p>
                     <div className="flex gap-2 ml-auto">
                         <button
                             onClick={() => setIsAutoPlaying(!isAutoPlaying)}
@@ -151,18 +135,12 @@ function App() {
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                 >
-                    <Grid
-                        tiles={tiles}
-                        floatingTexts={isAutoPlaying ? [] : floatingTexts}
-                        isFastMode={isAutoPlaying}
-                    />
+                    <Grid tiles={tiles} floatingTexts={isAutoPlaying ? [] : floatingTexts} isFastMode={isAutoPlaying} />
 
                     {/* Game Over Overlay */}
                     {gameOver && (
                         <div className="absolute inset-0 bg-[rgba(238,228,218,0.73)] z-50 flex flex-col items-center justify-center rounded-lg animate-fade-in backdrop-blur-sm">
-                            <h2 className="text-4xl sm:text-5xl font-extrabold text-[#776e65] mb-3 drop-shadow-md">
-                                Game Over!
-                            </h2>
+                            <h2 className="text-4xl sm:text-5xl font-extrabold text-[#776e65] mb-3 drop-shadow-md">Game Over!</h2>
                             <button
                                 onClick={reset}
                                 className="bg-[#8f7a66] text-white font-bold py-2 px-6 rounded text-lg hover:bg-[#9f8b77] transition-all transform hover:scale-105 shadow-md border-b-4 border-[#7f6a56] cursor-pointer"
@@ -176,9 +154,8 @@ function App() {
                 {/* Instructions */}
                 <div className="mt-4 text-[#776e65] text-xs sm:text-sm leading-relaxed border-t-2 border-[#bbada0] pt-2">
                     <p>
-                        <strong className="uppercase">How to play:</strong> Swipe (Mobile) or use{' '}
-                        <strong>arrow keys</strong> (Desktop) to move tiles. Merge numbers to reach{' '}
-                        <strong>2048!</strong>
+                        <strong className="uppercase">How to play:</strong> Swipe (Mobile) or use <strong>arrow keys</strong> (Desktop) to move tiles. Merge
+                        numbers to reach <strong>2048!</strong>
                     </p>
                 </div>
 

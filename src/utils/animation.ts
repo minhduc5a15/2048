@@ -56,11 +56,7 @@ export const simulateMove = (
             const current = lineTiles[k];
 
             // Check merge with previous
-            if (
-                processedLine.length > 0 &&
-                processedLine[processedLine.length - 1].val === current.val &&
-                lastMergedIdx !== processedLine.length - 1
-            ) {
+            if (processedLine.length > 0 && processedLine[processedLine.length - 1].val === current.val && lastMergedIdx !== processedLine.length - 1) {
                 // MERGE
                 const prev = processedLine[processedLine.length - 1];
 
@@ -72,16 +68,8 @@ export const simulateMove = (
                 floatingTexts.push({
                     id: tempIdCounter++,
                     val: prev.val,
-                    x: isVertical
-                        ? i
-                        : isReverse
-                          ? 3 - (processedLine.length - 1)
-                          : processedLine.length - 1,
-                    y: isVertical
-                        ? isReverse
-                            ? 3 - (processedLine.length - 1)
-                            : processedLine.length - 1
-                        : i,
+                    x: isVertical ? i : isReverse ? 3 - (processedLine.length - 1) : processedLine.length - 1,
+                    y: isVertical ? (isReverse ? 3 - (processedLine.length - 1) : processedLine.length - 1) : i,
                 });
 
                 // Calculate target R/C based on processedLine index

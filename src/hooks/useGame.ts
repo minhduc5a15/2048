@@ -116,39 +116,52 @@ export const useGame = () => {
     }, [tiles]);
 
     // Load Wasm & Restore State
+    // Load Wasm & Restore State
     useEffect(() => {
-        if (typeof window.create2048Module === 'function' && wasmModule.current) return;
+        // Biến cờ để tránh update state khi component đã unmount (cleanup)
+        let isMounted = true;
 
         const loadWasm = async () => {
             try {
                 if (typeof window.create2048Module !== 'function') {
-                    await new Promise<void>((resolve, reject) => {
-                        const script = document.createElement('script');
-                        script.src = '/wasm/game_core.js';
-                        script.async = true;
-                        script.onload = () => resolve();
-                        script.onerror = () => reject(new Error('Failed to load Wasm script'));
-                        document.body.appendChild(script);
-                    });
+                    const existingScript = document.querySelector('script[src="/wasm/game_core.js"]');
+
+                    if (!existingScript) {
+                        await new Promise<void>((resolve, reject) => {
+                            const script = document.createElement('script');
+                            script.src = '/wasm/game_core.js';
+                            script.async = true;
+                            script.onload = () => resolve();
+                            script.onerror = () => reject(new Error('Failed to load Wasm script'));
+                            document.body.appendChild(script);
+                        });
+                    } else {
+                        await new Promise<void>((resolve) => {
+                            const checkInterval = setInterval(() => {
+                                if (typeof window.create2048Module === 'function') {
+                                    clearInterval(checkInterval);
+                                    resolve();
+                                }
+                            }, 50);
+                        });
+                    }
                 }
 
-                if (window.create2048Module) {
+                if (window.create2048Module && !wasmModule.current && isMounted) {
                     const mod = await window.create2048Module();
-                    wasmModule.current = mod;
 
+                    if (!isMounted) return;
+
+                    wasmModule.current = mod;
                     board.current = new mod.Board();
                     agent.current = new mod.ExpectimaxAgent();
 
-                    // Restore state if exists
+                    // Restore state logic
                     const savedData = localStorage.getItem(STORAGE_KEY);
                     if (savedData) {
                         try {
                             const { bitboardHex, score } = JSON.parse(savedData);
-                            if (
-                                bitboardHex &&
-                                typeof score === 'number' &&
-                                board.current.restoreState
-                            ) {
+                            if (bitboardHex && typeof score === 'number' && board.current.restoreState) {
                                 console.log('Restoring game state:', bitboardHex);
                                 board.current.restoreState(bitboardHex, score);
                             }
@@ -158,7 +171,7 @@ export const useGame = () => {
                     }
 
                     setIsReady(true);
-                    syncState(undefined, false); // Initial sync
+                    syncState(undefined, false);
                 }
             } catch (err) {
                 console.error('Error loading Wasm module:', err);
@@ -166,6 +179,18 @@ export const useGame = () => {
         };
 
         loadWasm();
+
+        return () => {
+            isMounted = false;
+            if (board.current) {
+                board.current.delete();
+                board.current = null;
+            }
+            if (agent.current) {
+                agent.current.delete();
+                agent.current = null;
+            }
+        };
     }, [syncState]);
 
     const move = useCallback(

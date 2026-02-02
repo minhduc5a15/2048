@@ -23,17 +23,14 @@ var create2048Module = (() => {
                 return vers.join('');
             }
             // 300000 -> "30.0.0"
-            var packedVersionToHumanReadable = (n) =>
-                [(n / 10000) | 0, ((n / 100) | 0) % 100, n % 100].join('.');
+            var packedVersionToHumanReadable = (n) => [(n / 10000) | 0, ((n / 100) | 0) % 100, n % 100].join('.');
 
             var TARGET_NOT_SUPPORTED = 2147483647;
 
             // Note: We use a typeof check here instead of optional chaining using
             // globalThis because older browsers might not have globalThis defined.
             var currentNodeVersion =
-                typeof process !== 'undefined' && process.versions?.node
-                    ? humanReadableVersionToPacked(process.versions.node)
-                    : TARGET_NOT_SUPPORTED;
+                typeof process !== 'undefined' && process.versions?.node ? humanReadableVersionToPacked(process.versions.node) : TARGET_NOT_SUPPORTED;
             if (currentNodeVersion < 160000) {
                 throw new Error(
                     `This emscripten-generated code requires node v${packedVersionToHumanReadable(160000)} (detected v${packedVersionToHumanReadable(currentNodeVersion)})`
@@ -46,33 +43,25 @@ var create2048Module = (() => {
             }
 
             var currentSafariVersion =
-                userAgent.includes('Safari/') &&
-                !userAgent.includes('Chrome/') &&
-                userAgent.match(/Version\/(\d+\.?\d*\.?\d*)/)
+                userAgent.includes('Safari/') && !userAgent.includes('Chrome/') && userAgent.match(/Version\/(\d+\.?\d*\.?\d*)/)
                     ? humanReadableVersionToPacked(userAgent.match(/Version\/(\d+\.?\d*\.?\d*)/)[1])
                     : TARGET_NOT_SUPPORTED;
             if (currentSafariVersion < 150000) {
-                throw new Error(
-                    `This emscripten-generated code requires Safari v${packedVersionToHumanReadable(150000)} (detected v${currentSafariVersion})`
-                );
+                throw new Error(`This emscripten-generated code requires Safari v${packedVersionToHumanReadable(150000)} (detected v${currentSafariVersion})`);
             }
 
             var currentFirefoxVersion = userAgent.match(/Firefox\/(\d+(?:\.\d+)?)/)
                 ? parseFloat(userAgent.match(/Firefox\/(\d+(?:\.\d+)?)/)[1])
                 : TARGET_NOT_SUPPORTED;
             if (currentFirefoxVersion < 79) {
-                throw new Error(
-                    `This emscripten-generated code requires Firefox v79 (detected v${currentFirefoxVersion})`
-                );
+                throw new Error(`This emscripten-generated code requires Firefox v79 (detected v${currentFirefoxVersion})`);
             }
 
             var currentChromeVersion = userAgent.match(/Chrome\/(\d+(?:\.\d+)?)/)
                 ? parseFloat(userAgent.match(/Chrome\/(\d+(?:\.\d+)?)/)[1])
                 : TARGET_NOT_SUPPORTED;
             if (currentChromeVersion < 85) {
-                throw new Error(
-                    `This emscripten-generated code requires Chrome v85 (detected v${currentChromeVersion})`
-                );
+                throw new Error(`This emscripten-generated code requires Chrome v85 (detected v${currentChromeVersion})`);
             }
         })();
 
@@ -100,10 +89,8 @@ var create2048Module = (() => {
         var ENVIRONMENT_IS_WORKER = !!globalThis.WorkerGlobalScope;
         // N.b. Electron.js environment is simultaneously a NODE-environment, but
         // also a web environment.
-        var ENVIRONMENT_IS_NODE =
-            globalThis.process?.versions?.node && globalThis.process?.type != 'renderer';
-        var ENVIRONMENT_IS_SHELL =
-            !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
+        var ENVIRONMENT_IS_NODE = globalThis.process?.versions?.node && globalThis.process?.type != 'renderer';
+        var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
 
         // --pre-jses are emitted after the Module integration code, so that they can
         // refer to Module (if they choose; they can also define Module)
@@ -134,8 +121,7 @@ var create2048Module = (() => {
         var readAsync, readBinary;
 
         if (ENVIRONMENT_IS_NODE) {
-            const isNode =
-                globalThis.process?.versions?.node && globalThis.process?.type != 'renderer';
+            const isNode = globalThis.process?.versions?.node && globalThis.process?.type != 'renderer';
             if (!isNode)
                 throw new Error(
                     'not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)'
@@ -253,10 +239,7 @@ var create2048Module = (() => {
         // perform assertions in shell.js after we set up out() and err(), as otherwise
         // if an assertion fails it cannot print the message
 
-        assert(
-            !ENVIRONMENT_IS_SHELL,
-            'shell environment detected but not enabled at build time.  Add `shell` to `-sENVIRONMENT` to enable.'
-        );
+        assert(!ENVIRONMENT_IS_SHELL, 'shell environment detected but not enabled at build time.  Add `shell` to `-sENVIRONMENT` to enable.');
 
         // end include: shell.js
 
@@ -349,9 +332,7 @@ var create2048Module = (() => {
             }
             // Also test the global address 0 for integrity.
             if (HEAPU32[0 >> 2] != 0x63736d65 /* 'emsc' */) {
-                abort(
-                    'Runtime error: The application has corrupted its heap memory area (address zero)!'
-                );
+                abort('Runtime error: The application has corrupted its heap memory area (address zero)!');
             }
         }
         // end include: runtime_stack_check.js
@@ -373,10 +354,7 @@ var create2048Module = (() => {
             var h16 = new Int16Array(1);
             var h8 = new Int8Array(h16.buffer);
             h16[0] = 0x6373;
-            if (h8[0] !== 0x73 || h8[1] !== 0x63)
-                abort(
-                    'Runtime error: expected the system to be little-endian! (Run with -sSUPPORT_BIG_ENDIAN to bypass)'
-                );
+            if (h8[0] !== 0x73 || h8[1] !== 0x63) abort('Runtime error: expected the system to be little-endian! (Run with -sSUPPORT_BIG_ENDIAN to bypass)');
         })();
 
         function consumedModuleProp(prop) {
@@ -393,18 +371,12 @@ var create2048Module = (() => {
         }
 
         function makeInvalidEarlyAccess(name) {
-            return () =>
-                assert(
-                    false,
-                    `call to '${name}' via reference taken before Wasm module initialization`
-                );
+            return () => assert(false, `call to '${name}' via reference taken before Wasm module initialization`);
         }
 
         function ignoredModuleProp(prop) {
             if (Object.getOwnPropertyDescriptor(Module, prop)) {
-                abort(
-                    `\`Module.${prop}\` was supplied but \`${prop}\` not included in INCOMING_MODULE_JS_API`
-                );
+                abort(`\`Module.${prop}\` was supplied but \`${prop}\` not included in INCOMING_MODULE_JS_API`);
             }
         }
 
@@ -437,8 +409,7 @@ var create2048Module = (() => {
                     get() {
                         var msg = `'${sym}' was not exported. add it to EXPORTED_RUNTIME_METHODS (see the Emscripten FAQ)`;
                         if (isExportedByForceFilesystem(sym)) {
-                            msg +=
-                                '. Alternatively, forcing filesystem support (-sFORCE_FILESYSTEM) can export this for you';
+                            msg += '. Alternatively, forcing filesystem support (-sFORCE_FILESYSTEM) can export this for you';
                         }
                         abort(msg);
                     },
@@ -494,10 +465,7 @@ var create2048Module = (() => {
         // end include: memoryprofiler.js
         // end include: runtime_common.js
         assert(
-            globalThis.Int32Array &&
-                globalThis.Float64Array &&
-                Int32Array.prototype.subarray &&
-                Int32Array.prototype.set,
+            globalThis.Int32Array && globalThis.Float64Array && Int32Array.prototype.subarray && Int32Array.prototype.set,
             'JS engine does not provide full typed array support'
         );
 
@@ -585,17 +553,11 @@ var create2048Module = (() => {
 
         function createExportWrapper(name, nargs) {
             return (...args) => {
-                assert(
-                    runtimeInitialized,
-                    `native function \`${name}\` called before runtime initialization`
-                );
+                assert(runtimeInitialized, `native function \`${name}\` called before runtime initialization`);
                 var f = wasmExports[name];
                 assert(f, `exported native function \`${name}\` not found`);
                 // Only assert for too many arguments. Too few can be valid since the missing arguments will be zero filled.
-                assert(
-                    args.length <= nargs,
-                    `native function \`${name}\` called with ${args.length} args but expects ${nargs}`
-                );
+                assert(args.length <= nargs, `native function \`${name}\` called with ${args.length} args but expects ${nargs}`);
                 return f(...args);
             };
         }
@@ -667,10 +629,7 @@ var create2048Module = (() => {
             ) {
                 try {
                     var response = fetch(binaryFile, { credentials: 'same-origin' });
-                    var instantiationResult = await WebAssembly.instantiateStreaming(
-                        response,
-                        imports
-                    );
+                    var instantiationResult = await WebAssembly.instantiateStreaming(response, imports);
                     return instantiationResult;
                 } catch (reason) {
                     // We expect the most common failure cause to be a bad MIME type for the binary,
@@ -917,9 +876,7 @@ var create2048Module = (() => {
                 } else {
                     if ((u0 & 0xf8) != 0xf0)
                         warnOnce(
-                            'Invalid UTF-8 leading byte ' +
-                                ptrToString(u0) +
-                                ' encountered when deserializing a UTF-8 string in wasm memory to a JS string!'
+                            'Invalid UTF-8 leading byte ' + ptrToString(u0) + ' encountered when deserializing a UTF-8 string in wasm memory to a JS string!'
                         );
                     u0 = ((u0 & 7) << 18) | (u1 << 12) | (u2 << 6) | (heapOrArray[idx++] & 63);
                 }
@@ -954,11 +911,7 @@ var create2048Module = (() => {
         var ___assert_fail = (condition, filename, line, func) =>
             abort(
                 `Assertion failed: ${UTF8ToString(condition)}, at: ` +
-                    [
-                        filename ? UTF8ToString(filename) : 'unknown filename',
-                        line,
-                        func ? UTF8ToString(func) : 'unknown function',
-                    ]
+                    [filename ? UTF8ToString(filename) : 'unknown filename', line, func ? UTF8ToString(func) : 'unknown function']
             );
 
         class ExceptionInfo {
@@ -1202,10 +1155,7 @@ var create2048Module = (() => {
         };
 
         var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
-            assert(
-                typeof str === 'string',
-                `stringToUTF8Array expects a string (got ${typeof str})`
-            );
+            assert(typeof str === 'string', `stringToUTF8Array expects a string (got ${typeof str})`);
             // Parameter maxBytesToWrite is not optional. Negative values, 0, null,
             // undefined and false each don't write out any bytes.
             if (!(maxBytesToWrite > 0)) return 0;
@@ -1414,9 +1364,8 @@ var create2048Module = (() => {
                         c_cflag: 191,
                         c_lflag: 35387,
                         c_cc: [
-                            0x03, 0x1c, 0x7f, 0x15, 0x04, 0x00, 0x01, 0x00, 0x11, 0x13, 0x1a, 0x00,
-                            0x12, 0x0f, 0x17, 0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                            0x03, 0x1c, 0x7f, 0x15, 0x04, 0x00, 0x01, 0x00, 0x11, 0x13, 0x1a, 0x00, 0x12, 0x0f, 0x17, 0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                         ],
                     };
                 },
@@ -1447,9 +1396,7 @@ var create2048Module = (() => {
         };
 
         var mmapAlloc = (size) => {
-            abort(
-                'internal error: mmapAlloc called but `emscripten_builtin_memalign` native symbol not exported'
-            );
+            abort('internal error: mmapAlloc called but `emscripten_builtin_memalign` native symbol not exported');
         };
         var MEMFS = {
             ops_table: null,
@@ -1547,15 +1494,11 @@ var create2048Module = (() => {
                 // For small filesizes (<1MB), perform size*2 geometric increase, but for large sizes, do a much more conservative size*1.125 increase to
                 // avoid overshooting the allocation cap by a very large margin.
                 var CAPACITY_DOUBLING_MAX = 1024 * 1024;
-                newCapacity = Math.max(
-                    newCapacity,
-                    (prevCapacity * (prevCapacity < CAPACITY_DOUBLING_MAX ? 2.0 : 1.125)) >>> 0
-                );
+                newCapacity = Math.max(newCapacity, (prevCapacity * (prevCapacity < CAPACITY_DOUBLING_MAX ? 2.0 : 1.125)) >>> 0);
                 if (prevCapacity != 0) newCapacity = Math.max(newCapacity, 256); // At minimum allocate 256b for each file when expanding.
                 var oldContents = node.contents;
                 node.contents = new Uint8Array(newCapacity); // Allocate new storage.
-                if (node.usedBytes > 0)
-                    node.contents.set(oldContents.subarray(0, node.usedBytes), 0); // Copy old data over to the new storage.
+                if (node.usedBytes > 0) node.contents.set(oldContents.subarray(0, node.usedBytes), 0); // Copy old data over to the new storage.
             },
             resizeFileStorage(node, newSize) {
                 if (node.usedBytes == newSize) return;
@@ -1566,9 +1509,7 @@ var create2048Module = (() => {
                     var oldContents = node.contents;
                     node.contents = new Uint8Array(newSize); // Allocate new storage.
                     if (oldContents) {
-                        node.contents.set(
-                            oldContents.subarray(0, Math.min(newSize, node.usedBytes))
-                        ); // Copy old data over to the new storage.
+                        node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
                     }
                     node.usedBytes = newSize;
                 }
@@ -1636,11 +1577,7 @@ var create2048Module = (() => {
                     delete old_node.parent.contents[old_node.name];
                     new_dir.contents[new_name] = old_node;
                     old_node.name = new_name;
-                    new_dir.ctime =
-                        new_dir.mtime =
-                        old_node.parent.ctime =
-                        old_node.parent.mtime =
-                            Date.now();
+                    new_dir.ctime = new_dir.mtime = old_node.parent.ctime = old_node.parent.mtime = Date.now();
                 },
                 unlink(parent, name) {
                     delete parent.contents[name];
@@ -1701,10 +1638,7 @@ var create2048Module = (() => {
                     if (buffer.subarray && (!node.contents || node.contents.subarray)) {
                         // This write is from a typed array to a typed array?
                         if (canOwn) {
-                            assert(
-                                position === 0,
-                                'canOwn must imply no weird position inside the file'
-                            );
+                            assert(position === 0, 'canOwn must imply no weird position inside the file');
                             node.contents = buffer.subarray(offset, offset + length);
                             node.usedBytes = length;
                             return length;
@@ -1772,11 +1706,7 @@ var create2048Module = (() => {
                                 if (contents.subarray) {
                                     contents = contents.subarray(position, position + length);
                                 } else {
-                                    contents = Array.prototype.slice.call(
-                                        contents,
-                                        position,
-                                        position + length
-                                    );
+                                    contents = Array.prototype.slice.call(contents, position, position + length);
                                 }
                             }
                             HEAP8.set(contents, ptr);
@@ -2026,10 +1956,7 @@ var create2048Module = (() => {
 
             for (var plugin of preloadPlugins) {
                 if (plugin['canHandle'](fullname)) {
-                    assert(
-                        plugin['handle'].constructor.name === 'AsyncFunction',
-                        'Filesystem plugin handlers must be async functions (See #24914)'
-                    );
+                    assert(plugin['handle'].constructor.name === 'AsyncFunction', 'Filesystem plugin handlers must be async functions (See #24914)');
                     return plugin['handle'](byteArray, fullname);
                 }
             }
@@ -2037,16 +1964,7 @@ var create2048Module = (() => {
             // byteArray.
             return byteArray;
         };
-        var FS_preloadFile = async (
-            parent,
-            name,
-            url,
-            canRead,
-            canWrite,
-            dontCreateFile,
-            canOwn,
-            preFinish
-        ) => {
+        var FS_preloadFile = async (parent, name, url, canRead, canWrite, dontCreateFile, canOwn, preFinish) => {
             // TODO we should allow people to just pass in a complete filename instead
             // of parent and name being that we just join them anyways
             var fullname = name ? PATH_FS.resolve(PATH.join2(parent, name)) : parent;
@@ -2068,21 +1986,8 @@ var create2048Module = (() => {
                 removeRunDependency(dep);
             }
         };
-        var FS_createPreloadedFile = (
-            parent,
-            name,
-            url,
-            canRead,
-            canWrite,
-            onload,
-            onerror,
-            dontCreateFile,
-            canOwn,
-            preFinish
-        ) => {
-            FS_preloadFile(parent, name, url, canRead, canWrite, dontCreateFile, canOwn, preFinish)
-                .then(onload)
-                .catch(onerror);
+        var FS_createPreloadedFile = (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile, canOwn, preFinish) => {
+            FS_preloadFile(parent, name, url, canRead, canWrite, dontCreateFile, canOwn, preFinish).then(onload).catch(onerror);
         };
         var FS = {
             root: null,
@@ -2528,9 +2433,7 @@ var create2048Module = (() => {
                 FS.syncFSRequests++;
 
                 if (FS.syncFSRequests > 1) {
-                    err(
-                        `warning: ${FS.syncFSRequests} FS.syncfs operations in flight at once, probably just doing extra work`
-                    );
+                    err(`warning: ${FS.syncFSRequests} FS.syncfs operations in flight at once, probably just doing extra work`);
                 }
 
                 var mounts = FS.getMounts(FS.root.mount);
@@ -2803,9 +2706,7 @@ var create2048Module = (() => {
                 }
                 // need delete permissions if we'll be overwriting.
                 // need create permissions if new doesn't already exist.
-                errCode = new_node
-                    ? FS.mayDelete(new_dir, new_name, isdir)
-                    : FS.mayCreate(new_dir, new_name);
+                errCode = new_node ? FS.mayDelete(new_dir, new_name, isdir) : FS.mayCreate(new_dir, new_name);
                 if (errCode) {
                     throw new FS.ErrnoError(errCode);
                 }
@@ -3193,14 +3094,7 @@ var create2048Module = (() => {
                 } else if (!stream.seekable) {
                     throw new FS.ErrnoError(70);
                 }
-                var bytesWritten = stream.stream_ops.write(
-                    stream,
-                    buffer,
-                    offset,
-                    length,
-                    position,
-                    canOwn
-                );
+                var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
                 if (!seeking) stream.position += bytesWritten;
                 return bytesWritten;
             },
@@ -3491,10 +3385,7 @@ var create2048Module = (() => {
                 return current;
             },
             createFile(parent, name, properties, canRead, canWrite) {
-                var path = PATH.join2(
-                    typeof parent == 'string' ? parent : FS.getPath(parent),
-                    name
-                );
+                var path = PATH.join2(typeof parent == 'string' ? parent : FS.getPath(parent), name);
                 var mode = FS_getMode(canRead, canWrite);
                 return FS.create(path, mode);
             },
@@ -3509,8 +3400,7 @@ var create2048Module = (() => {
                 if (data) {
                     if (typeof data == 'string') {
                         var arr = new Array(data.length);
-                        for (var i = 0, len = data.length; i < len; ++i)
-                            arr[i] = data.charCodeAt(i);
+                        for (var i = 0, len = data.length; i < len; ++i) arr[i] = data.charCodeAt(i);
                         data = arr;
                     }
                     // make sure we can write to the file
@@ -3522,10 +3412,7 @@ var create2048Module = (() => {
                 }
             },
             createDevice(parent, name, input, output) {
-                var path = PATH.join2(
-                    typeof parent == 'string' ? parent : FS.getPath(parent),
-                    name
-                );
+                var path = PATH.join2(typeof parent == 'string' ? parent : FS.getPath(parent), name);
                 var mode = FS_getMode(!!input, !!output);
                 FS.createDevice.major ??= 64;
                 var dev = FS.makedev(FS.createDevice.major++, 0);
@@ -3615,15 +3502,11 @@ var create2048Module = (() => {
                         var xhr = new XMLHttpRequest();
                         xhr.open('HEAD', url, false);
                         xhr.send(null);
-                        if (!((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304))
-                            abort("Couldn't load " + url + '. Status: ' + xhr.status);
+                        if (!((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304)) abort("Couldn't load " + url + '. Status: ' + xhr.status);
                         var datalength = Number(xhr.getResponseHeader('Content-length'));
                         var header;
-                        var hasByteServing =
-                            (header = xhr.getResponseHeader('Accept-Ranges')) && header === 'bytes';
-                        var usesGzip =
-                            (header = xhr.getResponseHeader('Content-Encoding')) &&
-                            header === 'gzip';
+                        var hasByteServing = (header = xhr.getResponseHeader('Accept-Ranges')) && header === 'bytes';
+                        var usesGzip = (header = xhr.getResponseHeader('Content-Encoding')) && header === 'gzip';
 
                         var chunkSize = 1024 * 1024; // Chunk size in bytes
 
@@ -3631,22 +3514,13 @@ var create2048Module = (() => {
 
                         // Function to get a range from the remote URL.
                         var doXHR = (from, to) => {
-                            if (from > to)
-                                abort(
-                                    'invalid range (' +
-                                        from +
-                                        ', ' +
-                                        to +
-                                        ') or no bytes requested!'
-                                );
-                            if (to > datalength - 1)
-                                abort('only ' + datalength + ' bytes available! programmer error!');
+                            if (from > to) abort('invalid range (' + from + ', ' + to + ') or no bytes requested!');
+                            if (to > datalength - 1) abort('only ' + datalength + ' bytes available! programmer error!');
 
                             // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
                             var xhr = new XMLHttpRequest();
                             xhr.open('GET', url, false);
-                            if (datalength !== chunkSize)
-                                xhr.setRequestHeader('Range', 'bytes=' + from + '-' + to);
+                            if (datalength !== chunkSize) xhr.setRequestHeader('Range', 'bytes=' + from + '-' + to);
 
                             // Some hints to the browser that we want binary data.
                             xhr.responseType = 'arraybuffer';
@@ -3655,12 +3529,9 @@ var create2048Module = (() => {
                             }
 
                             xhr.send(null);
-                            if (!((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304))
-                                abort("Couldn't load " + url + '. Status: ' + xhr.status);
+                            if (!((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304)) abort("Couldn't load " + url + '. Status: ' + xhr.status);
                             if (xhr.response !== undefined) {
-                                return new Uint8Array(
-                                    /** @type{Array<number>} */ (xhr.response || [])
-                                );
+                                return new Uint8Array(/** @type{Array<number>} */ (xhr.response || []));
                             }
                             return intArrayFromString(xhr.responseText || '', true);
                         };
@@ -3672,8 +3543,7 @@ var create2048Module = (() => {
                             if (typeof lazyArray.chunks[chunkNum] == 'undefined') {
                                 lazyArray.chunks[chunkNum] = doXHR(start, end);
                             }
-                            if (typeof lazyArray.chunks[chunkNum] == 'undefined')
-                                abort('doXHR failed!');
+                            if (typeof lazyArray.chunks[chunkNum] == 'undefined') abort('doXHR failed!');
                             return lazyArray.chunks[chunkNum];
                         });
 
@@ -3682,9 +3552,7 @@ var create2048Module = (() => {
                             chunkSize = datalength = 1; // this will force getter(0)/doXHR do download the whole file
                             datalength = this.getter(0).length;
                             chunkSize = datalength;
-                            out(
-                                'LazyFiles on gzip forces download of the whole file when length is accessed'
-                            );
+                            out('LazyFiles on gzip forces download of the whole file when length is accessed');
                         }
 
                         this._length = datalength;
@@ -3707,9 +3575,7 @@ var create2048Module = (() => {
 
                 if (globalThis.XMLHttpRequest) {
                     if (!ENVIRONMENT_IS_WORKER)
-                        abort(
-                            'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc'
-                        );
+                        abort('Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc');
                     var lazyArray = new LazyUint8Array();
                     var properties = { isDevice: false, contents: lazyArray };
                 } else {
@@ -4154,17 +4020,11 @@ var create2048Module = (() => {
                 case 1:
                     return signed ? (pointer) => HEAP8[pointer] : (pointer) => HEAPU8[pointer];
                 case 2:
-                    return signed
-                        ? (pointer) => HEAP16[pointer >> 1]
-                        : (pointer) => HEAPU16[pointer >> 1];
+                    return signed ? (pointer) => HEAP16[pointer >> 1] : (pointer) => HEAPU16[pointer >> 1];
                 case 4:
-                    return signed
-                        ? (pointer) => HEAP32[pointer >> 2]
-                        : (pointer) => HEAPU32[pointer >> 2];
+                    return signed ? (pointer) => HEAP32[pointer >> 2] : (pointer) => HEAPU32[pointer >> 2];
                 case 8:
-                    return signed
-                        ? (pointer) => HEAP64[pointer >> 3]
-                        : (pointer) => HEAPU64[pointer >> 3];
+                    return signed ? (pointer) => HEAP64[pointer >> 3] : (pointer) => HEAPU64[pointer >> 3];
                 default:
                     throw new TypeError(`invalid integer width (${width}): ${name}`);
             }
@@ -4212,9 +4072,7 @@ var create2048Module = (() => {
                     if (typeof value == 'number') {
                         value = BigInt(value);
                     } else if (typeof value != 'bigint') {
-                        throw new TypeError(
-                            `Cannot convert "${embindRepr(value)}" to ${this.name}`
-                        );
+                        throw new TypeError(`Cannot convert "${embindRepr(value)}" to ${this.name}`);
                     }
                     assertIntegerRange(name, value, minRange, maxRange);
                     return value;
@@ -4571,8 +4429,7 @@ var create2048Module = (() => {
         /** @constructor */
         function ClassHandle() {}
 
-        var createNamedFunction = (name, func) =>
-            Object.defineProperty(func, 'name', { value: name });
+        var createNamedFunction = (name, func) => Object.defineProperty(func, 'name', { value: name });
 
         var ensureOverloadTable = (proto, methodName, humanName) => {
             if (undefined === proto[methodName].overloadTable) {
@@ -4596,11 +4453,7 @@ var create2048Module = (() => {
         /** @param {number=} numArguments */
         var exposePublicSymbol = (name, value, numArguments) => {
             if (Module.hasOwnProperty(name)) {
-                if (
-                    undefined === numArguments ||
-                    (undefined !== Module[name].overloadTable &&
-                        undefined !== Module[name].overloadTable[numArguments])
-                ) {
+                if (undefined === numArguments || (undefined !== Module[name].overloadTable && undefined !== Module[name].overloadTable[numArguments])) {
                     throwBindingError(`Cannot register public name '${name}' twice`);
                 }
 
@@ -4608,9 +4461,7 @@ var create2048Module = (() => {
                 // that routes between the two.
                 ensureOverloadTable(Module, name, name);
                 if (Module[name].overloadTable.hasOwnProperty(numArguments)) {
-                    throwBindingError(
-                        `Cannot register multiple overloads of a function with the same number of arguments (${numArguments})!`
-                    );
+                    throwBindingError(`Cannot register multiple overloads of a function with the same number of arguments (${numArguments})!`);
                 }
                 // Add the new function into the overload table.
                 Module[name].overloadTable[numArguments] = value;
@@ -4634,16 +4485,7 @@ var create2048Module = (() => {
         };
 
         /** @constructor */
-        function RegisteredClass(
-            name,
-            constructor,
-            instancePrototype,
-            rawDestructor,
-            baseClass,
-            getActualType,
-            upcast,
-            downcast
-        ) {
+        function RegisteredClass(name, constructor, instancePrototype, rawDestructor, baseClass, getActualType, upcast, downcast) {
             this.name = name;
             this.constructor = constructor;
             this.instancePrototype = instancePrototype;
@@ -4658,9 +4500,7 @@ var create2048Module = (() => {
         var upcastPointer = (ptr, ptrClass, desiredClass) => {
             while (ptrClass !== desiredClass) {
                 if (!ptrClass.upcast) {
-                    throwBindingError(
-                        `Expected null or instance of ${desiredClass.name}, got an instance of ${ptrClass.name}`
-                    );
+                    throwBindingError(`Expected null or instance of ${desiredClass.name}, got an instance of ${ptrClass.name}`);
                 }
                 ptr = ptrClass.upcast(ptr);
                 ptrClass = ptrClass.baseClass;
@@ -4783,9 +4623,7 @@ var create2048Module = (() => {
                 throwBindingError(`Cannot pass deleted object as a pointer of type ${this.name}`);
             }
             if (handle.$$.ptrType.isConst) {
-                throwBindingError(
-                    `Cannot convert argument of type ${handle.$$.ptrType.name} to parameter type ${this.name}`
-                );
+                throwBindingError(`Cannot convert argument of type ${handle.$$.ptrType.name} to parameter type ${this.name}`);
             }
             var handleClass = handle.$$.ptrType.registeredClass;
             var ptr = upcastPointer(handle.$$.ptr, handleClass, this.registeredClass);
@@ -4889,10 +4727,7 @@ var create2048Module = (() => {
                 wasmTableMirror[funcPtr] = func = wasmTable.get(funcPtr);
             }
             /** @suppress {checkTypes} */
-            assert(
-                wasmTable.get(funcPtr) == func,
-                'JavaScript-side Wasm function table mirror is out of date!'
-            );
+            assert(wasmTable.get(funcPtr) == func, 'JavaScript-side Wasm function table mirror is out of date!');
             return func;
         };
         var embind__requireFunction = (signature, rawFunction, isAsync = false) => {
@@ -4907,9 +4742,7 @@ var create2048Module = (() => {
 
             var fp = makeDynCaller();
             if (typeof fp != 'function') {
-                throwBindingError(
-                    `unknown function pointer with signature ${signature}: ${rawFunction}`
-                );
+                throwBindingError(`unknown function pointer with signature ${signature}: ${rawFunction}`);
             }
             return fp;
         };
@@ -5005,100 +4838,67 @@ var create2048Module = (() => {
 
             exposePublicSymbol(legalFunctionName, function () {
                 // this code cannot run if baseClassRawType is zero
-                throwUnboundTypeError(`Cannot construct ${name} due to unbound types`, [
-                    baseClassRawType,
-                ]);
+                throwUnboundTypeError(`Cannot construct ${name} due to unbound types`, [baseClassRawType]);
             });
 
-            whenDependentTypesAreResolved(
-                [rawType, rawPointerType, rawConstPointerType],
-                baseClassRawType ? [baseClassRawType] : [],
-                (base) => {
-                    base = base[0];
+            whenDependentTypesAreResolved([rawType, rawPointerType, rawConstPointerType], baseClassRawType ? [baseClassRawType] : [], (base) => {
+                base = base[0];
 
-                    var baseClass;
-                    var basePrototype;
-                    if (baseClassRawType) {
-                        baseClass = base.registeredClass;
-                        basePrototype = baseClass.instancePrototype;
-                    } else {
-                        basePrototype = ClassHandle.prototype;
-                    }
-
-                    var constructor = createNamedFunction(name, function (...args) {
-                        if (Object.getPrototypeOf(this) !== instancePrototype) {
-                            throw new BindingError(`Use 'new' to construct ${name}`);
-                        }
-                        if (undefined === registeredClass.constructor_body) {
-                            throw new BindingError(`${name} has no accessible constructor`);
-                        }
-                        var body = registeredClass.constructor_body[args.length];
-                        if (undefined === body) {
-                            throw new BindingError(
-                                `Tried to invoke ctor of ${name} with invalid number of parameters (${args.length}) - expected (${Object.keys(registeredClass.constructor_body).toString()}) parameters instead!`
-                            );
-                        }
-                        return body.apply(this, args);
-                    });
-
-                    var instancePrototype = Object.create(basePrototype, {
-                        constructor: { value: constructor },
-                    });
-
-                    constructor.prototype = instancePrototype;
-
-                    var registeredClass = new RegisteredClass(
-                        name,
-                        constructor,
-                        instancePrototype,
-                        rawDestructor,
-                        baseClass,
-                        getActualType,
-                        upcast,
-                        downcast
-                    );
-
-                    if (registeredClass.baseClass) {
-                        // Keep track of class hierarchy. Used to allow sub-classes to inherit class functions.
-                        registeredClass.baseClass.__derivedClasses ??= [];
-
-                        registeredClass.baseClass.__derivedClasses.push(registeredClass);
-                    }
-
-                    var referenceConverter = new RegisteredPointer(
-                        name,
-                        registeredClass,
-                        true,
-                        false,
-                        false
-                    );
-
-                    var pointerConverter = new RegisteredPointer(
-                        name + '*',
-                        registeredClass,
-                        false,
-                        false,
-                        false
-                    );
-
-                    var constPointerConverter = new RegisteredPointer(
-                        name + ' const*',
-                        registeredClass,
-                        false,
-                        true,
-                        false
-                    );
-
-                    registeredPointers[rawType] = {
-                        pointerType: pointerConverter,
-                        constPointerType: constPointerConverter,
-                    };
-
-                    replacePublicSymbol(legalFunctionName, constructor);
-
-                    return [referenceConverter, pointerConverter, constPointerConverter];
+                var baseClass;
+                var basePrototype;
+                if (baseClassRawType) {
+                    baseClass = base.registeredClass;
+                    basePrototype = baseClass.instancePrototype;
+                } else {
+                    basePrototype = ClassHandle.prototype;
                 }
-            );
+
+                var constructor = createNamedFunction(name, function (...args) {
+                    if (Object.getPrototypeOf(this) !== instancePrototype) {
+                        throw new BindingError(`Use 'new' to construct ${name}`);
+                    }
+                    if (undefined === registeredClass.constructor_body) {
+                        throw new BindingError(`${name} has no accessible constructor`);
+                    }
+                    var body = registeredClass.constructor_body[args.length];
+                    if (undefined === body) {
+                        throw new BindingError(
+                            `Tried to invoke ctor of ${name} with invalid number of parameters (${args.length}) - expected (${Object.keys(registeredClass.constructor_body).toString()}) parameters instead!`
+                        );
+                    }
+                    return body.apply(this, args);
+                });
+
+                var instancePrototype = Object.create(basePrototype, {
+                    constructor: { value: constructor },
+                });
+
+                constructor.prototype = instancePrototype;
+
+                var registeredClass = new RegisteredClass(name, constructor, instancePrototype, rawDestructor, baseClass, getActualType, upcast, downcast);
+
+                if (registeredClass.baseClass) {
+                    // Keep track of class hierarchy. Used to allow sub-classes to inherit class functions.
+                    registeredClass.baseClass.__derivedClasses ??= [];
+
+                    registeredClass.baseClass.__derivedClasses.push(registeredClass);
+                }
+
+                var referenceConverter = new RegisteredPointer(name, registeredClass, true, false, false);
+
+                var pointerConverter = new RegisteredPointer(name + '*', registeredClass, false, false, false);
+
+                var constPointerConverter = new RegisteredPointer(name + ' const*', registeredClass, false, true, false);
+
+                registeredPointers[rawType] = {
+                    pointerType: pointerConverter,
+                    constPointerType: constPointerConverter,
+                };
+
+                replacePublicSymbol(legalFunctionName, constructor);
+
+                return [referenceConverter, pointerConverter, constPointerConverter];
+            });
         };
 
         var heap32VectorToArray = (count, firstElement) => {
@@ -5133,9 +4933,7 @@ var create2048Module = (() => {
         function checkArgCount(numArgs, minArgs, maxArgs, humanName, throwBindingError) {
             if (numArgs < minArgs || numArgs > maxArgs) {
                 var argCountMessage = minArgs == maxArgs ? minArgs : `${minArgs} to ${maxArgs}`;
-                throwBindingError(
-                    `function ${humanName} called with ${numArgs} arguments, expected ${argCountMessage}`
-                );
+                throwBindingError(`function ${humanName} called with ${numArgs} arguments, expected ${argCountMessage}`);
             }
         }
         function createJsInvoker(argTypes, isClassMethodFunc, returns, isAsync) {
@@ -5155,23 +4953,14 @@ var create2048Module = (() => {
 
             var invokerFnBody = `return function (${argsList}) {\n`;
 
-            invokerFnBody +=
-                'checkArgCount(arguments.length, minArgs, maxArgs, humanName, throwBindingError);\n';
+            invokerFnBody += 'checkArgCount(arguments.length, minArgs, maxArgs, humanName, throwBindingError);\n';
 
             if (needsDestructorStack) {
                 invokerFnBody += 'var destructors = [];\n';
             }
 
             var dtorStack = needsDestructorStack ? 'destructors' : 'null';
-            var args1 = [
-                'humanName',
-                'throwBindingError',
-                'invoker',
-                'fn',
-                'runDestructors',
-                'fromRetWire',
-                'toClassParamWire',
-            ];
+            var args1 = ['humanName', 'throwBindingError', 'invoker', 'fn', 'runDestructors', 'fromRetWire', 'toClassParamWire'];
 
             if (isClassMethodFunc) {
                 invokerFnBody += `var thisWired = toClassParamWire(${dtorStack}, this);\n`;
@@ -5183,8 +4972,7 @@ var create2048Module = (() => {
                 args1.push(argName);
             }
 
-            invokerFnBody +=
-                (returns || isAsync ? 'var rv = ' : '') + `invoker(${argsListWired});\n`;
+            invokerFnBody += (returns || isAsync ? 'var rv = ' : '') + `invoker(${argsListWired});\n`;
 
             var returnVal = returns ? 'rv' : '';
 
@@ -5224,14 +5012,7 @@ var create2048Module = (() => {
             return requiredArgCount;
         }
 
-        function craftInvokerFunction(
-            humanName,
-            argTypes,
-            classType,
-            cppInvokerFunc,
-            cppTargetFunc,
-            /** boolean= */ isAsync
-        ) {
+        function craftInvokerFunction(humanName, argTypes, classType, cppInvokerFunc, cppTargetFunc, /** boolean= */ isAsync) {
             // humanName: a human-readable string name for the function to be generated.
             // argTypes: An array that contains the embind type objects for all types in the function signature.
             //    argTypes[0] is the type object for the function return value.
@@ -5244,9 +5025,7 @@ var create2048Module = (() => {
             var argCount = argTypes.length;
 
             if (argCount < 2) {
-                throwBindingError(
-                    "argTypes array size mismatch! Must at least get return value and 'this' types!"
-                );
+                throwBindingError("argTypes array size mismatch! Must at least get return value and 'this' types!");
             }
 
             assert(!isAsync, 'Async bindings are only supported with JSPI.');
@@ -5297,14 +5076,7 @@ var create2048Module = (() => {
             var invokerFn = invokerFactory(...closureArgs);
             return createNamedFunction(humanName, invokerFn);
         }
-        var __embind_register_class_constructor = (
-            rawClassType,
-            argCount,
-            rawArgTypesAddr,
-            invokerSignature,
-            invoker,
-            rawConstructor
-        ) => {
+        var __embind_register_class_constructor = (rawClassType, argCount, rawArgTypesAddr, invokerSignature, invoker, rawConstructor) => {
             assert(argCount > 0);
             var rawArgTypes = heap32VectorToArray(argCount, rawArgTypesAddr);
             invoker = embind__requireFunction(invokerSignature, invoker);
@@ -5324,22 +5096,13 @@ var create2048Module = (() => {
                     );
                 }
                 classType.registeredClass.constructor_body[argCount - 1] = () => {
-                    throwUnboundTypeError(
-                        `Cannot construct ${classType.name} due to unbound types`,
-                        rawArgTypes
-                    );
+                    throwUnboundTypeError(`Cannot construct ${classType.name} due to unbound types`, rawArgTypes);
                 };
 
                 whenDependentTypesAreResolved([], rawArgTypes, (argTypes) => {
                     // Insert empty slot for context type (argTypes[1]).
                     argTypes.splice(1, 0, null);
-                    classType.registeredClass.constructor_body[argCount - 1] = craftInvokerFunction(
-                        humanName,
-                        argTypes,
-                        null,
-                        invoker,
-                        rawConstructor
-                    );
+                    classType.registeredClass.constructor_body[argCount - 1] = craftInvokerFunction(humanName, argTypes, null, invoker, rawConstructor);
                     return [];
                 });
                 return [];
@@ -5383,20 +5146,12 @@ var create2048Module = (() => {
                 }
 
                 function unboundTypesHandler() {
-                    throwUnboundTypeError(
-                        `Cannot call ${humanName} due to unbound types`,
-                        rawArgTypes
-                    );
+                    throwUnboundTypeError(`Cannot call ${humanName} due to unbound types`, rawArgTypes);
                 }
 
                 var proto = classType.registeredClass.instancePrototype;
                 var method = proto[methodName];
-                if (
-                    undefined === method ||
-                    (undefined === method.overloadTable &&
-                        method.className !== classType.name &&
-                        method.argCount === argCount - 2)
-                ) {
+                if (undefined === method || (undefined === method.overloadTable && method.className !== classType.name && method.argCount === argCount - 2)) {
                     // This is the first overload to be registered, OR we are replacing a
                     // function in the base class with a function in the derived class.
                     unboundTypesHandler.argCount = argCount - 2;
@@ -5410,14 +5165,7 @@ var create2048Module = (() => {
                 }
 
                 whenDependentTypesAreResolved([], rawArgTypes, (argTypes) => {
-                    var memberFunction = craftInvokerFunction(
-                        humanName,
-                        argTypes,
-                        classType,
-                        rawInvoker,
-                        context,
-                        isAsync
-                    );
+                    var memberFunction = craftInvokerFunction(humanName, argTypes, classType, rawInvoker, context, isAsync);
 
                     // Replace the initial unbound-handler-stub function with the
                     // appropriate member function, now that all types are resolved. If
@@ -5454,10 +5202,7 @@ var create2048Module = (() => {
                     throwBindingError(`Cannot use deleted val. handle = ${handle}`);
                 }
                 // handle 2 is supposed to be `undefined`.
-                assert(
-                    handle === 2 || (emval_handles[handle] !== undefined && handle % 2 === 0),
-                    `invalid handle: ${handle}`
-                );
+                assert(handle === 2 || (emval_handles[handle] !== undefined && handle % 2 === 0), `invalid handle: ${handle}`);
                 return emval_handles[handle];
             },
             toHandle: (value) => {
@@ -5782,12 +5527,7 @@ var create2048Module = (() => {
                     var valueIsOfTypeString = typeof value == 'string';
 
                     // We accept `string` or array views with single byte elements
-                    if (
-                        !(
-                            valueIsOfTypeString ||
-                            (ArrayBuffer.isView(value) && value.BYTES_PER_ELEMENT == 1)
-                        )
-                    ) {
+                    if (!(valueIsOfTypeString || (ArrayBuffer.isView(value) && value.BYTES_PER_ELEMENT == 1))) {
                         throwBindingError('Cannot pass non-string to std::string');
                     }
                     if (stdStringIsUTF8 && valueIsOfTypeString) {
@@ -5808,9 +5548,7 @@ var create2048Module = (() => {
                                 var charCode = value.charCodeAt(i);
                                 if (charCode > 255) {
                                     _free(base);
-                                    throwBindingError(
-                                        'String has UTF-16 code units that do not fit in 8 bits'
-                                    );
+                                    throwBindingError('String has UTF-16 code units that do not fit in 8 bits');
                                 }
                                 HEAPU8[ptr + i] = charCode;
                             }
@@ -5839,8 +5577,7 @@ var create2048Module = (() => {
             var endIdx = findStringEnd(HEAPU16, idx, maxBytesToRead / 2, ignoreNul);
 
             // When using conditional TextDecoder, skip it for short strings as the overhead of the native call is not worth it.
-            if (endIdx - idx > 16 && UTF16Decoder)
-                return UTF16Decoder.decode(HEAPU16.subarray(idx, endIdx));
+            if (endIdx - idx > 16 && UTF16Decoder) return UTF16Decoder.decode(HEAPU16.subarray(idx, endIdx));
 
             // Fallback: decode without UTF16Decoder
             var str = '';
@@ -5859,10 +5596,7 @@ var create2048Module = (() => {
         };
 
         var stringToUTF16 = (str, outPtr, maxBytesToWrite) => {
-            assert(
-                outPtr % 2 == 0,
-                'Pointer passed to stringToUTF16 must be aligned to two bytes!'
-            );
+            assert(outPtr % 2 == 0, 'Pointer passed to stringToUTF16 must be aligned to two bytes!');
             assert(
                 typeof maxBytesToWrite == 'number',
                 'stringToUTF16(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!'
@@ -5872,8 +5606,7 @@ var create2048Module = (() => {
             if (maxBytesToWrite < 2) return 0;
             maxBytesToWrite -= 2; // Null terminator.
             var startPtr = outPtr;
-            var numCharsToWrite =
-                maxBytesToWrite < str.length * 2 ? maxBytesToWrite / 2 : str.length;
+            var numCharsToWrite = maxBytesToWrite < str.length * 2 ? maxBytesToWrite / 2 : str.length;
             for (var i = 0; i < numCharsToWrite; ++i) {
                 // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
                 var codeUnit = str.charCodeAt(i); // possibly a lead surrogate
@@ -5902,10 +5635,7 @@ var create2048Module = (() => {
         };
 
         var stringToUTF32 = (str, outPtr, maxBytesToWrite) => {
-            assert(
-                outPtr % 4 == 0,
-                'Pointer passed to stringToUTF32 must be aligned to four bytes!'
-            );
+            assert(outPtr % 4 == 0, 'Pointer passed to stringToUTF32 must be aligned to four bytes!');
             assert(
                 typeof maxBytesToWrite == 'number',
                 'stringToUTF32(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!'
@@ -6045,14 +5775,8 @@ var create2048Module = (() => {
             var summerName = extractZone(summerOffset);
             assert(winterName);
             assert(summerName);
-            assert(
-                lengthBytesUTF8(winterName) <= 16,
-                `timezone name truncated to fit in TZNAME_MAX (${winterName})`
-            );
-            assert(
-                lengthBytesUTF8(summerName) <= 16,
-                `timezone name truncated to fit in TZNAME_MAX (${summerName})`
-            );
+            assert(lengthBytesUTF8(winterName) <= 16, `timezone name truncated to fit in TZNAME_MAX (${winterName})`);
+            assert(lengthBytesUTF8(summerName) <= 16, `timezone name truncated to fit in TZNAME_MAX (${summerName})`);
             if (summerOffset < winterOffset) {
                 // Northern hemisphere
                 stringToUTF8(winterName, std_name, 17);
@@ -6117,9 +5841,7 @@ var create2048Module = (() => {
                 updateMemoryViews();
                 return 1 /*success*/;
             } catch (e) {
-                err(
-                    `growMemory: Attempted to grow heap from ${oldHeapSize} bytes to ${size} bytes, but got error: ${e}`
-                );
+                err(`growMemory: Attempted to grow heap from ${oldHeapSize} bytes to ${size} bytes, but got error: ${e}`);
             }
             // implicit 0 return to save code size (caller will cast "undefined" into 0
             // anyhow)
@@ -6153,9 +5875,7 @@ var create2048Module = (() => {
             // (the wasm binary specifies it, so if we tried, we'd fail anyhow).
             var maxHeapSize = getHeapMax();
             if (requestedSize > maxHeapSize) {
-                err(
-                    `Cannot enlarge memory, requested ${requestedSize} bytes, but the limit is ${maxHeapSize} bytes!`
-                );
+                err(`Cannot enlarge memory, requested ${requestedSize} bytes, but the limit is ${maxHeapSize} bytes!`);
                 return false;
             }
 
@@ -6167,19 +5887,14 @@ var create2048Module = (() => {
                 // but limit overreserving (default to capping at +96MB overgrowth at most)
                 overGrownHeapSize = Math.min(overGrownHeapSize, requestedSize + 100663296);
 
-                var newSize = Math.min(
-                    maxHeapSize,
-                    alignMemory(Math.max(requestedSize, overGrownHeapSize), 65536)
-                );
+                var newSize = Math.min(maxHeapSize, alignMemory(Math.max(requestedSize, overGrownHeapSize), 65536));
 
                 var replacement = growMemory(newSize);
                 if (replacement) {
                     return true;
                 }
             }
-            err(
-                `Failed to grow the heap from ${oldSize} bytes to ${newSize} bytes, not enough memory!`
-            );
+            err(`Failed to grow the heap from ${oldSize} bytes to ${newSize} bytes, not enough memory!`);
             return false;
         };
 
@@ -6371,48 +6086,21 @@ var create2048Module = (() => {
                 typeof Module['memoryInitializerPrefixURL'] == 'undefined',
                 'Module.memoryInitializerPrefixURL option was removed, use Module.locateFile instead'
             );
-            assert(
-                typeof Module['pthreadMainPrefixURL'] == 'undefined',
-                'Module.pthreadMainPrefixURL option was removed, use Module.locateFile instead'
-            );
-            assert(
-                typeof Module['cdInitializerPrefixURL'] == 'undefined',
-                'Module.cdInitializerPrefixURL option was removed, use Module.locateFile instead'
-            );
-            assert(
-                typeof Module['filePackagePrefixURL'] == 'undefined',
-                'Module.filePackagePrefixURL option was removed, use Module.locateFile instead'
-            );
+            assert(typeof Module['pthreadMainPrefixURL'] == 'undefined', 'Module.pthreadMainPrefixURL option was removed, use Module.locateFile instead');
+            assert(typeof Module['cdInitializerPrefixURL'] == 'undefined', 'Module.cdInitializerPrefixURL option was removed, use Module.locateFile instead');
+            assert(typeof Module['filePackagePrefixURL'] == 'undefined', 'Module.filePackagePrefixURL option was removed, use Module.locateFile instead');
             assert(typeof Module['read'] == 'undefined', 'Module.read option was removed');
-            assert(
-                typeof Module['readAsync'] == 'undefined',
-                'Module.readAsync option was removed (modify readAsync in JS)'
-            );
-            assert(
-                typeof Module['readBinary'] == 'undefined',
-                'Module.readBinary option was removed (modify readBinary in JS)'
-            );
-            assert(
-                typeof Module['setWindowTitle'] == 'undefined',
-                'Module.setWindowTitle option was removed (modify emscripten_set_window_title in JS)'
-            );
-            assert(
-                typeof Module['TOTAL_MEMORY'] == 'undefined',
-                'Module.TOTAL_MEMORY has been renamed Module.INITIAL_MEMORY'
-            );
+            assert(typeof Module['readAsync'] == 'undefined', 'Module.readAsync option was removed (modify readAsync in JS)');
+            assert(typeof Module['readBinary'] == 'undefined', 'Module.readBinary option was removed (modify readBinary in JS)');
+            assert(typeof Module['setWindowTitle'] == 'undefined', 'Module.setWindowTitle option was removed (modify emscripten_set_window_title in JS)');
+            assert(typeof Module['TOTAL_MEMORY'] == 'undefined', 'Module.TOTAL_MEMORY has been renamed Module.INITIAL_MEMORY');
             assert(
                 typeof Module['ENVIRONMENT'] == 'undefined',
                 'Module.ENVIRONMENT has been deprecated. To force the environment, use the ENVIRONMENT compile-time option (for example, -sENVIRONMENT=web or -sENVIRONMENT=node)'
             );
-            assert(
-                typeof Module['STACK_SIZE'] == 'undefined',
-                'STACK_SIZE can no longer be set at runtime.  Use -sSTACK_SIZE at link time'
-            );
+            assert(typeof Module['STACK_SIZE'] == 'undefined', 'STACK_SIZE can no longer be set at runtime.  Use -sSTACK_SIZE at link time');
             // If memory is defined in wasm, the user can't provide it, or set INITIAL_MEMORY
-            assert(
-                typeof Module['wasmMemory'] == 'undefined',
-                'Use of `wasmMemory` detected.  Use -sIMPORTED_MEMORY to define wasmMemory externally'
-            );
+            assert(typeof Module['wasmMemory'] == 'undefined', 'Use of `wasmMemory` detected.  Use -sIMPORTED_MEMORY to define wasmMemory externally');
             assert(
                 typeof Module['INITIAL_MEMORY'] == 'undefined',
                 'Detected runtime INITIAL_MEMORY setting.  Use -sIMPORTED_MEMORY to define wasmMemory dynamically'
@@ -6951,46 +6639,19 @@ var create2048Module = (() => {
 
         function assignWasmExports(wasmExports) {
             assert(typeof wasmExports['malloc'] != 'undefined', 'missing Wasm export: malloc');
-            assert(
-                typeof wasmExports['__getTypeName'] != 'undefined',
-                'missing Wasm export: __getTypeName'
-            );
+            assert(typeof wasmExports['__getTypeName'] != 'undefined', 'missing Wasm export: __getTypeName');
             assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
-            assert(
-                typeof wasmExports['emscripten_stack_get_end'] != 'undefined',
-                'missing Wasm export: emscripten_stack_get_end'
-            );
-            assert(
-                typeof wasmExports['emscripten_stack_get_base'] != 'undefined',
-                'missing Wasm export: emscripten_stack_get_base'
-            );
+            assert(typeof wasmExports['emscripten_stack_get_end'] != 'undefined', 'missing Wasm export: emscripten_stack_get_end');
+            assert(typeof wasmExports['emscripten_stack_get_base'] != 'undefined', 'missing Wasm export: emscripten_stack_get_base');
             assert(typeof wasmExports['strerror'] != 'undefined', 'missing Wasm export: strerror');
             assert(typeof wasmExports['free'] != 'undefined', 'missing Wasm export: free');
-            assert(
-                typeof wasmExports['emscripten_stack_init'] != 'undefined',
-                'missing Wasm export: emscripten_stack_init'
-            );
-            assert(
-                typeof wasmExports['emscripten_stack_get_free'] != 'undefined',
-                'missing Wasm export: emscripten_stack_get_free'
-            );
-            assert(
-                typeof wasmExports['_emscripten_stack_restore'] != 'undefined',
-                'missing Wasm export: _emscripten_stack_restore'
-            );
-            assert(
-                typeof wasmExports['_emscripten_stack_alloc'] != 'undefined',
-                'missing Wasm export: _emscripten_stack_alloc'
-            );
-            assert(
-                typeof wasmExports['emscripten_stack_get_current'] != 'undefined',
-                'missing Wasm export: emscripten_stack_get_current'
-            );
+            assert(typeof wasmExports['emscripten_stack_init'] != 'undefined', 'missing Wasm export: emscripten_stack_init');
+            assert(typeof wasmExports['emscripten_stack_get_free'] != 'undefined', 'missing Wasm export: emscripten_stack_get_free');
+            assert(typeof wasmExports['_emscripten_stack_restore'] != 'undefined', 'missing Wasm export: _emscripten_stack_restore');
+            assert(typeof wasmExports['_emscripten_stack_alloc'] != 'undefined', 'missing Wasm export: _emscripten_stack_alloc');
+            assert(typeof wasmExports['emscripten_stack_get_current'] != 'undefined', 'missing Wasm export: emscripten_stack_get_current');
             assert(typeof wasmExports['memory'] != 'undefined', 'missing Wasm export: memory');
-            assert(
-                typeof wasmExports['__indirect_function_table'] != 'undefined',
-                'missing Wasm export: __indirect_function_table'
-            );
+            assert(typeof wasmExports['__indirect_function_table'] != 'undefined', 'missing Wasm export: __indirect_function_table');
             _malloc = createExportWrapper('malloc', 1);
             ___getTypeName = createExportWrapper('__getTypeName', 1);
             _fflush = createExportWrapper('fflush', 1);
@@ -7125,10 +6786,7 @@ var create2048Module = (() => {
                 Module['onRuntimeInitialized']?.();
                 consumedModuleProp('onRuntimeInitialized');
 
-                assert(
-                    !Module['_main'],
-                    'compiled without a main, but one is present. if you added it from JS, use Module["onRuntimeInitialized"]'
-                );
+                assert(!Module['_main'], 'compiled without a main, but one is present. if you added it from JS, use Module["onRuntimeInitialized"]');
 
                 postRun();
             }
