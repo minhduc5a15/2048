@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Direction } from '../core/types';
+import { Direction } from '../constants';
 import type { TouchEvent } from 'react';
 
 export const useSwipe = (onMove: (dir: Direction) => void) => {

@@ -1,17 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Board } from '../core/board';
-import { GameSaver } from '../core/game-saver';
-import type { IGameObserver } from '../core/types';
-import { Direction } from '../core/types';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Direction } from '../constants';
 
 export interface RenderTile {
     id: number;
     val: number;
     r: number;
     c: number;
-    isNew?: boolean; // For spawn animation
-    isMerged?: boolean; // For merge animation
-    toDelete?: boolean; // For ghost tiles
+    isNew?: boolean;
+    isMerged?: boolean;
+    toDelete?: boolean;
 }
 
 export interface FloatingText {
@@ -21,188 +18,125 @@ export interface FloatingText {
     y: number;
 }
 
-import { ExpectimaxAgent } from '../ai/expectimax-agent';
-
 export const useGame = () => {
-    const [board] = useState(() => new Board());
+    // State
     const [tiles, setTiles] = useState<RenderTile[]>([]);
-    const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
     const [score, setScore] = useState(0);
     const [highScore, setHighScore] = useState(0);
     const [gameOver, setGameOver] = useState(false);
-
-    const aiAgent = useRef(new ExpectimaxAgent());
-
-    // Mutable refs to handle synchronous updates from Board callbacks
-    const nextId = useRef(1);
-    const nextTextId = useRef(1);
-    const currentTiles = useRef<RenderTile[]>([]);
-
-    const updateState = useCallback(() => {
-        setTiles([...currentTiles.current]);
-        setScore(board.getScore());
-
-        const currentHigh = Math.max(board.getHighScore(), GameSaver.loadHighScore());
-        if (board.getScore() > currentHigh) {
-            GameSaver.saveHighScore(board.getScore());
-        }
-        setHighScore(Math.max(currentHigh, board.getScore()));
-
-        GameSaver.save(board.getState());
-    }, [board]);
-
-    // Cleanup ghost tiles
-    useEffect(() => {
-        if (tiles.some((t) => t.toDelete)) {
-            const timer = setTimeout(() => {
-                currentTiles.current = currentTiles.current.filter((t) => !t.toDelete);
-                setTiles([...currentTiles.current]);
-            }, 150); // Matches animation duration approx
-            return () => clearTimeout(timer);
-        }
-    }, [tiles]);
-
-    // Cleanup floating texts
-    useEffect(() => {
-        if (floatingTexts.length > 0) {
-            const timer = setTimeout(() => {
-                setFloatingTexts((prev) => prev.slice(1)); // Remove oldest
-            }, 600); // Max lifetime 0.6s
-            return () => clearTimeout(timer);
-        }
-    }, [floatingTexts]);
-
-    // Observer Implementation
-    const observer = useRef<IGameObserver>({
-        onGameReset: () => {
-            currentTiles.current = [];
-            setFloatingTexts([]);
-            setGameOver(false);
-        },
-        onGameOver: () => {
-            setGameOver(true);
-            GameSaver.clearSave();
-        },
-        onTileSpawn: (r, c, value) => {
-            currentTiles.current.push({
-                id: nextId.current++,
-                val: value,
-                r,
-                c,
-                isNew: true,
-            });
-        },
-        onTileMove: (fromR, fromC, toR, toC) => {
-            const tile = currentTiles.current.find(
-                (t) => t.r === fromR && t.c === fromC && !t.toDelete
-            );
-            if (tile) {
-                tile.r = toR;
-                tile.c = toC;
-                tile.isNew = false;
-                tile.isMerged = false;
-            }
-        },
-        onTileMerge: (r, c, newValue) => {
-            // Mark existing tiles at (r,c) for deletion
-            // This includes the tile that JUST moved there in the previous step of this loop
-            currentTiles.current.forEach((t) => {
-                if (t.r === r && t.c === c && !t.toDelete) {
-                    t.toDelete = true;
-                }
-            });
-
-            // Add new merged tile
-            currentTiles.current.push({
-                id: nextId.current++,
-                val: newValue,
-                r,
-                c,
-                isMerged: true,
-            });
-
-            // Spawn floating text
-            setFloatingTexts((prev) => [
-                ...prev,
-                {
-                    id: nextTextId.current++,
-                    val: newValue,
-                    x: c, // We store grid coords here, convert to pixels in render
-                    y: r,
-                },
-            ]);
-        },
-    });
-
-    // Initialize
-    useEffect(() => {
-        board.addObserver(observer.current);
-
-        // Load saved game
-        const savedState = GameSaver.load();
-        const savedHighScore = GameSaver.loadHighScore();
-        board.setHighScore(savedHighScore);
-
-        if (savedState) {
-            board.loadState(savedState);
-            // Reconstruct tiles from bitboard because we don't save RenderTiles
-            // This means we lose animation history on reload, which is fine.
-            const grid = board.getGrid();
-            const reconstructedTiles: RenderTile[] = [];
-            for (let r = 0; r < 4; ++r) {
-                for (let c = 0; c < 4; ++c) {
-                    if (grid[r][c] !== 0) {
-                        reconstructedTiles.push({
-                            id: nextId.current++,
-                            val: grid[r][c],
-                            r,
-                            c,
-                        });
-                    }
+    const [isReady, setIsReady] = useState(false);
+    
+    // Wasm refs
+    const wasmModule = useRef<WasmModule | null>(null);
+    const board = useRef<WasmBoard | null>(null);
+    const agent = useRef<WasmAgent | null>(null);
+    
+    // Sync state from C++ to React
+    const syncState = useCallback(() => {
+        if (!board.current) return;
+        
+        const b = board.current;
+        const newTiles: RenderTile[] = [];
+        
+        // Reconstruct grid
+        for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 4; c++) {
+                const val = b.getTile(r, c);
+                if (val > 0) {
+                    newTiles.push({
+                        id: r * 4 + c, // Stable ID based on position for React reconciliation
+                        val: 1 << val,
+                        r,
+                        c,
+                        // Animation flags (isNew, isMerged) are skipped in this basic Wasm integration
+                        // as we don't have move vector data from the simple Wasm API.
+                    });
                 }
             }
-            currentTiles.current = reconstructedTiles;
         }
+        
+        setTiles(newTiles);
+        setScore(b.getScore());
+        setHighScore(b.getHighScore());
+        setGameOver(b.isGameOver());
+    }, []);
 
-        updateState();
+    // Load Wasm
+    useEffect(() => {
+        // Prevent double loading
+        if (typeof window.create2048Module === 'function' && wasmModule.current) return;
 
-        return () => board.removeObserver(observer.current);
-    }, [board, updateState]);
+        const loadWasm = async () => {
+            try {
+                // Ensure the script is loaded
+                if (typeof window.create2048Module !== 'function') {
+                   await new Promise<void>((resolve, reject) => {
+                       const script = document.createElement('script');
+                       script.src = '/wasm/game_core.js';
+                       script.async = true;
+                       script.onload = () => resolve();
+                       script.onerror = () => reject(new Error('Failed to load Wasm script'));
+                       document.body.appendChild(script);
+                   });
+                }
 
-    const move = useCallback(
-        (dir: Direction) => {
-            if (gameOver) return;
-
-            // Reset animation flags for existing tiles before move
-            currentTiles.current.forEach((t) => {
-                t.isNew = false;
-                t.isMerged = false;
-            });
-
-            const moved = board.move(dir);
-            if (moved) {
-                updateState();
+                if (window.create2048Module) {
+                    const mod = await window.create2048Module();
+                    wasmModule.current = mod;
+                    board.current = new mod.Board();
+                    agent.current = new mod.ExpectimaxAgent();
+                    
+                    setIsReady(true);
+                    syncState();
+                }
+            } catch (err) {
+                console.error("Error loading Wasm module:", err);
             }
-        },
-        [board, gameOver, updateState]
-    );
+        };
+
+        loadWasm();
+        
+        return () => {
+             // Cleanup if needed
+        }
+    }, [syncState]);
+
+    const move = useCallback((dir: Direction) => {
+        if (!board.current || !isReady || gameOver) return;
+        
+        const moved = board.current.move(dir);
+        if (moved) {
+            syncState();
+        }
+    }, [isReady, gameOver, syncState]);
 
     const reset = useCallback(() => {
-        board.reset();
-        updateState();
-    }, [board, updateState]);
+        if (!board.current) return;
+        board.current.reset();
+        syncState();
+    }, [syncState]);
 
     const autoMove = useCallback(() => {
-        if (gameOver) return;
-
-        // Get raw bitboard for AI
-        const currentState = board.getState();
-        const bestDir = aiAgent.current.getBestMove(currentState.board);
-
-        if (bestDir !== null) {
-            move(bestDir);
+        if (!board.current || !agent.current || gameOver) return;
+        
+        // Agent returns direction: 0: Up, 1: Down, 2: Left, 3: Right
+        const bestDir = agent.current.getBestMove(board.current);
+        
+        // Check if move is valid (not -1)
+        if (bestDir >= 0) {
+             move(bestDir as Direction);
         }
-    }, [board, gameOver, move]);
+    }, [gameOver, move]);
 
-    return { tiles, floatingTexts, score, highScore, gameOver, move, reset, autoMove };
+    return { 
+        tiles, 
+        floatingTexts: [], // Empty for now
+        score, 
+        highScore, 
+        gameOver, 
+        move, 
+        reset, 
+        autoMove,
+        isReady 
+    };
 };

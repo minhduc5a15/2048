@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { Grid } from './components/Grid';
 import { useGame } from './hooks/useGame';
-import { Direction } from './core/types';
+import { Direction } from './constants';
 import { useSwipe } from './hooks/useSwipe';
 
 function App() {
-    const { tiles, floatingTexts, score, highScore, gameOver, move, reset, autoMove } = useGame();
+    const { tiles, floatingTexts, score, highScore, gameOver, move, reset, autoMove, isReady } = useGame();
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
     const autoPlayTimer = useRef<number | null>(null);
     const { handleTouchStart, handleTouchEnd } = useSwipe(move);
@@ -72,6 +72,16 @@ function App() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [move, gameOver, isAutoPlaying]);
+
+    // Loading Screen
+    if (!isReady) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-[#faf8ef] font-sans">
+                <h1 className="text-4xl font-bold text-[#776e65] mb-4">2048</h1>
+                <div className="text-[#776e65] text-xl animate-pulse">Loading Game Core...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#504439] to-[#2b251f] font-sans p-4 select-none overflow-hidden">
