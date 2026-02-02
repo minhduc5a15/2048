@@ -20,6 +20,7 @@ export interface FloatingText {
 }
 
 const STORAGE_KEY = '2048-react-wasm-state';
+const HIGH_SCORE_KEY = '2048-high-score';
 
 export const useGame = () => {
     // State
@@ -41,19 +42,24 @@ export const useGame = () => {
 
         const b = board.current;
         const currentScore = b.getScore();
-        const currentHighScore = b.getHighScore();
         const isOver = b.isGameOver();
 
         setScore(currentScore);
-        setHighScore(currentHighScore);
         setGameOver(isOver);
 
-        // Save to LocalStorage
+        setHighScore((prevHigh) => {
+            if (currentScore > prevHigh) {
+                localStorage.setItem(HIGH_SCORE_KEY, currentScore.toString());
+                return currentScore;
+            }
+            return prevHigh;
+        });
+
+        // Save game state
         if (b.getBitboardString) {
             const stateToSave = {
                 bitboardHex: b.getBitboardString(),
                 score: currentScore,
-                highScore: currentHighScore, // We might want to persist high score separately too
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
         }
@@ -72,7 +78,7 @@ export const useGame = () => {
 
                 if (val > 0) {
                     rawTiles.push({
-                        id: r * 4 + c, // Simple ID for auto mode
+                        id: r * 4 + c,
                         val: val,
                         r,
                         c,
@@ -83,9 +89,8 @@ export const useGame = () => {
 
         // Logic branching: Auto Play vs Manual Play
         if (isAuto || direction === undefined) {
-            // Fast/Init path: Just render what C++ has
             setTiles(rawTiles);
-            setFloatingTexts([]); // No floating text in auto/reset
+            setFloatingTexts([]);
         } else {
             setTiles((prevTiles) => {
                 const result = simulateMove(prevTiles, direction, cppGrid);
@@ -99,7 +104,7 @@ export const useGame = () => {
     useEffect(() => {
         if (floatingTexts.length > 0) {
             const timer = setTimeout(() => {
-                setFloatingTexts((prev) => prev.slice(1)); // Remove oldest
+                setFloatingTexts((prev) => prev.slice(1));
             }, 600);
             return () => clearTimeout(timer);
         }
@@ -116,13 +121,17 @@ export const useGame = () => {
     }, [tiles]);
 
     // Load Wasm & Restore State
-    // Load Wasm & Restore State
     useEffect(() => {
-        // Biến cờ để tránh update state khi component đã unmount (cleanup)
         let isMounted = true;
 
         const loadWasm = async () => {
             try {
+                const savedHigh = localStorage.getItem(HIGH_SCORE_KEY);
+                if (savedHigh) {
+                    setHighScore(parseInt(savedHigh, 10));
+                }
+
+                // Logic Load Script
                 if (typeof window.create2048Module !== 'function') {
                     const existingScript = document.querySelector('script[src="/wasm/game_core.js"]');
 
@@ -156,7 +165,7 @@ export const useGame = () => {
                     board.current = new mod.Board();
                     agent.current = new mod.ExpectimaxAgent();
 
-                    // Restore state logic
+                    // Restore Game State
                     const savedData = localStorage.getItem(STORAGE_KEY);
                     if (savedData) {
                         try {
@@ -208,7 +217,9 @@ export const useGame = () => {
     const reset = useCallback(() => {
         if (!board.current) return;
         board.current.reset();
-        localStorage.removeItem(STORAGE_KEY); // Clear save on reset
+
+        localStorage.removeItem(STORAGE_KEY);
+
         syncState(undefined, false);
     }, [syncState]);
 
