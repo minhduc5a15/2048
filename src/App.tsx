@@ -5,7 +5,8 @@ import { Direction } from './constants';
 import { useSwipe } from './hooks/useSwipe';
 
 function App() {
-    const { tiles, floatingTexts, score, highScore, gameOver, move, reset, autoMove, isReady } = useGame();
+    const { tiles, floatingTexts, score, highScore, gameOver, move, reset, autoMove, isReady } =
+        useGame();
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
     const autoPlayTimer = useRef<number | null>(null);
     const { handleTouchStart, handleTouchEnd } = useSwipe(move);

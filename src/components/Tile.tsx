@@ -25,41 +25,39 @@ export const Tile = ({ tile, isFastMode = false }: TileProps) => {
               ? 'clamp(24px, 6vw, 45px)'
               : 'clamp(18px, 5vw, 35px)';
 
-    // Determine animation states
     const isMerged = tile.isMerged;
     const isNew = tile.isNew;
+    const toDelete = tile.toDelete;
 
-    // Fast mode: No animation duration
-    const transition = isFastMode
-        ? { duration: 0 }
-        : {
-              left: { duration: Theme.ANIMATION_SPEED_SLIDE, ease: 'linear' }, // Slide
-              top: { duration: Theme.ANIMATION_SPEED_SLIDE, ease: 'linear' }, // Slide
-              scale: {
-                  duration: Theme.ANIMATION_SPEED_SCALE,
-                  ease: isNew ? 'backOut' : 'easeInOut', // Spawn (backOut) vs Merge (pop)
-                  times: isMerged ? [0, 0.5, 1] : undefined, // For keyframes
-              },
-              opacity: { duration: 0.15 },
-          };
+    // Animation configuration
+
+    // When isFastMode is true, we disable most animations for performance
 
     return (
         <motion.div
+            layout={!isFastMode && !isNew} // Only layout animate if NOT new (slide existing tiles)
             initial={
-                !isFastMode && isNew
-                    ? { scale: 0, left, top }
-                    : isMerged
-                      ? { scale: 1, left, top }
+                isFastMode
+                    ? false
+                    : isNew
+                      ? { scale: 0 } // Zoom in from center of its position
                       : false
             }
             animate={{
                 left,
                 top,
-                scale: !isFastMode && isMerged ? [1, 1.2, 1] : 1,
-                opacity: 1,
+                scale: isFastMode ? 1 : isMerged ? [1, 1.2, 1] : toDelete ? 0.8 : 1,
+                opacity: isFastMode ? 1 : toDelete ? 0 : 1,
+                zIndex: isMerged ? 20 : toDelete ? 5 : 10,
             }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={transition}
+            transition={{
+                duration: isFastMode ? 0 : 0.1,
+                ease: 'easeInOut',
+                scale: {
+                    duration: 0.15,
+                    // If merged, pop effect. If deleting, shrink.
+                },
+            }}
             className={clsx(
                 'absolute flex items-center justify-center rounded-md font-bold select-none shadow-sm'
             )}
@@ -69,7 +67,10 @@ export const Tile = ({ tile, isFastMode = false }: TileProps) => {
                 backgroundColor,
                 color,
                 fontSize,
-                zIndex: isMerged ? 20 : tile.toDelete ? 10 : 15,
+                // Positions are now handled by motion via 'left'/'top' in animate prop
+                // But we set initial styles for server/static rendering
+                left,
+                top,
             }}
         >
             {tile.val}

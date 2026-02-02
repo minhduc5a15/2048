@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Direction } from '../constants';
+import { simulateMove } from '../utils/animation';
 
 export interface RenderTile {
     id: number;
@@ -18,144 +19,197 @@ export interface FloatingText {
     y: number;
 }
 
+const STORAGE_KEY = '2048-react-wasm-state';
+
 export const useGame = () => {
     // State
     const [tiles, setTiles] = useState<RenderTile[]>([]);
+    const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
     const [score, setScore] = useState(0);
     const [highScore, setHighScore] = useState(0);
     const [gameOver, setGameOver] = useState(false);
     const [isReady, setIsReady] = useState(false);
-    
+
     // Wasm refs
     const wasmModule = useRef<WasmModule | null>(null);
     const board = useRef<WasmBoard | null>(null);
     const agent = useRef<WasmAgent | null>(null);
-    
+
     // Sync state from C++ to React
-    const syncState = useCallback(() => {
+    const syncState = useCallback((direction?: Direction, isAuto: boolean = false) => {
         if (!board.current) return;
-        
+
         const b = board.current;
-        const newTiles: RenderTile[] = [];
-        
-        // Reconstruct grid
+        const currentScore = b.getScore();
+        const currentHighScore = b.getHighScore();
+        const isOver = b.isGameOver();
+
+        setScore(currentScore);
+        setHighScore(currentHighScore);
+        setGameOver(isOver);
+
+        // Save to LocalStorage
+        if (b.getBitboardString) {
+            const stateToSave = {
+                bitboardHex: b.getBitboardString(),
+                score: currentScore,
+                highScore: currentHighScore, // We might want to persist high score separately too
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+        }
+
+        // Construct 2D grid from C++ for comparison/rendering
+        const cppGrid: number[][] = Array(4)
+            .fill(0)
+            .map(() => Array(4).fill(0));
+        const rawTiles: RenderTile[] = []; // For fallback/auto mode
+
         for (let r = 0; r < 4; r++) {
             for (let c = 0; c < 4; c++) {
-                const val = b.getTile(r, c);
+                const exponent = b.getTile(r, c);
+                const val = exponent > 0 ? 1 << exponent : 0;
+                cppGrid[r][c] = val;
+
                 if (val > 0) {
-                    newTiles.push({
-                        id: r * 4 + c, // Stable ID based on position for React reconciliation
-                        val: 1 << val,
+                    rawTiles.push({
+                        id: r * 4 + c, // Simple ID for auto mode
+                        val: val,
                         r,
                         c,
-                        // Animation flags (isNew, isMerged) are skipped in this basic Wasm integration
-                        // as we don't have move vector data from the simple Wasm API.
                     });
                 }
             }
         }
-        
-        setTiles(newTiles);
-        setScore(b.getScore());
-        setHighScore(b.getHighScore());
-        setGameOver(b.isGameOver());
+
+        // Logic branching: Auto Play vs Manual Play
+        if (isAuto || direction === undefined) {
+            // Fast/Init path: Just render what C++ has
+            setTiles(rawTiles);
+            setFloatingTexts([]); // No floating text in auto/reset
+        } else {
+            setTiles((prevTiles) => {
+                const result = simulateMove(prevTiles, direction, cppGrid);
+                setFloatingTexts((prev) => [...prev, ...result.floatingTexts]);
+                return result.nextTiles;
+            });
+        }
     }, []);
 
-    // Load Wasm
+    // Cleanup floating texts
     useEffect(() => {
-        // Prevent double loading
+        if (floatingTexts.length > 0) {
+            const timer = setTimeout(() => {
+                setFloatingTexts((prev) => prev.slice(1)); // Remove oldest
+            }, 600);
+            return () => clearTimeout(timer);
+        }
+    }, [floatingTexts]);
+
+    // Cleanup ghost tiles
+    useEffect(() => {
+        if (tiles.some((t) => t.toDelete)) {
+            const timer = setTimeout(() => {
+                setTiles((prev) => prev.filter((t) => !t.toDelete));
+            }, 150);
+            return () => clearTimeout(timer);
+        }
+    }, [tiles]);
+
+    // Load Wasm & Restore State
+    useEffect(() => {
         if (typeof window.create2048Module === 'function' && wasmModule.current) return;
 
         const loadWasm = async () => {
             try {
-                // Ensure the script is loaded
                 if (typeof window.create2048Module !== 'function') {
-                   await new Promise<void>((resolve, reject) => {
-                       const script = document.createElement('script');
-                       script.src = '/wasm/game_core.js';
-                       script.async = true;
-                       script.onload = () => resolve();
-                       script.onerror = () => reject(new Error('Failed to load Wasm script'));
-                       document.body.appendChild(script);
-                   });
+                    await new Promise<void>((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = '/wasm/game_core.js';
+                        script.async = true;
+                        script.onload = () => resolve();
+                        script.onerror = () => reject(new Error('Failed to load Wasm script'));
+                        document.body.appendChild(script);
+                    });
                 }
 
                 if (window.create2048Module) {
                     const mod = await window.create2048Module();
                     wasmModule.current = mod;
-                    
-                    // Instantiate Board FIRST to trigger static initialization in C++ constructor
+
                     board.current = new mod.Board();
                     agent.current = new mod.ExpectimaxAgent();
 
-                    // Verify core logic initialization AFTER Board creation
-                    if (mod.isTableInitialized && !mod.isTableInitialized()) {
-                        console.error("Wasm Logic Error: LookupTable broken (Merge check failed)!");
-                    } else {
-                        console.log("Wasm Logic Verified: LookupTable initialized & Merge logic OK.");
+                    // Restore state if exists
+                    const savedData = localStorage.getItem(STORAGE_KEY);
+                    if (savedData) {
+                        try {
+                            const { bitboardHex, score } = JSON.parse(savedData);
+                            if (
+                                bitboardHex &&
+                                typeof score === 'number' &&
+                                board.current.restoreState
+                            ) {
+                                console.log('Restoring game state:', bitboardHex);
+                                board.current.restoreState(bitboardHex, score);
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse saved game:', e);
+                        }
                     }
-                    
+
                     setIsReady(true);
-                    syncState();
+                    syncState(undefined, false); // Initial sync
                 }
             } catch (err) {
-                console.error("Error loading Wasm module:", err);
+                console.error('Error loading Wasm module:', err);
             }
         };
 
         loadWasm();
-        
-        return () => {
-             // Cleanup if needed
-        }
     }, [syncState]);
 
-    const move = useCallback((dir: Direction) => {
-        if (!board.current || !isReady || gameOver) return;
-        
-        try {
-            const moved = board.current.move(dir);
+    const move = useCallback(
+        (dir: Direction, isAuto: boolean = false) => {
+            if (!board.current || !isReady || gameOver) return;
+
+            // CRITICAL: Use moveInt to ensure correct Integer -> Enum casting in C++
+            const moved = board.current.moveInt(dir);
             if (moved) {
-                syncState();
+                syncState(dir, isAuto);
             }
-        } catch (err) {
-            console.error("[JS] Error calling board.move:", err);
-        }
-    }, [isReady, gameOver, syncState]);
+        },
+        [isReady, gameOver, syncState]
+    );
 
     const reset = useCallback(() => {
         if (!board.current) return;
         board.current.reset();
-        syncState();
+        localStorage.removeItem(STORAGE_KEY); // Clear save on reset
+        syncState(undefined, false);
     }, [syncState]);
 
     const autoMove = useCallback(() => {
         if (!board.current || !agent.current || gameOver) return;
-        
+
         try {
-            // Agent returns direction: 0: Up, 1: Down, 2: Left, 3: Right
             const bestDir = agent.current.getBestMove(board.current);
-            
-            // Check if move is valid (not -1)
             if (bestDir >= 0) {
-                 move(bestDir as Direction);
-            } else {
-                console.warn("AI returned no move (-1)");
+                move(bestDir as Direction, true); // Pass isAuto=true
             }
         } catch (e) {
-            console.error("Error in AI autoMove:", e);
+            console.error('Error in AI autoMove:', e);
         }
     }, [gameOver, move]);
 
-    return { 
-        tiles, 
-        floatingTexts: [], // Empty for now
-        score, 
-        highScore, 
-        gameOver, 
-        move, 
-        reset, 
+    return {
+        tiles,
+        floatingTexts,
+        score,
+        highScore,
+        gameOver,
+        move,
+        reset,
         autoMove,
-        isReady 
+        isReady,
     };
 };
