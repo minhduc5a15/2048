@@ -83,8 +83,17 @@ export const useGame = () => {
                 if (window.create2048Module) {
                     const mod = await window.create2048Module();
                     wasmModule.current = mod;
+                    
+                    // Instantiate Board FIRST to trigger static initialization in C++ constructor
                     board.current = new mod.Board();
                     agent.current = new mod.ExpectimaxAgent();
+
+                    // Verify core logic initialization AFTER Board creation
+                    if (mod.isTableInitialized && !mod.isTableInitialized()) {
+                        console.error("Wasm Logic Error: LookupTable broken (Merge check failed)!");
+                    } else {
+                        console.log("Wasm Logic Verified: LookupTable initialized & Merge logic OK.");
+                    }
                     
                     setIsReady(true);
                     syncState();
@@ -104,9 +113,13 @@ export const useGame = () => {
     const move = useCallback((dir: Direction) => {
         if (!board.current || !isReady || gameOver) return;
         
-        const moved = board.current.move(dir);
-        if (moved) {
-            syncState();
+        try {
+            const moved = board.current.move(dir);
+            if (moved) {
+                syncState();
+            }
+        } catch (err) {
+            console.error("[JS] Error calling board.move:", err);
         }
     }, [isReady, gameOver, syncState]);
 
@@ -119,12 +132,18 @@ export const useGame = () => {
     const autoMove = useCallback(() => {
         if (!board.current || !agent.current || gameOver) return;
         
-        // Agent returns direction: 0: Up, 1: Down, 2: Left, 3: Right
-        const bestDir = agent.current.getBestMove(board.current);
-        
-        // Check if move is valid (not -1)
-        if (bestDir >= 0) {
-             move(bestDir as Direction);
+        try {
+            // Agent returns direction: 0: Up, 1: Down, 2: Left, 3: Right
+            const bestDir = agent.current.getBestMove(board.current);
+            
+            // Check if move is valid (not -1)
+            if (bestDir >= 0) {
+                 move(bestDir as Direction);
+            } else {
+                console.warn("AI returned no move (-1)");
+            }
+        } catch (e) {
+            console.error("Error in AI autoMove:", e);
         }
     }, [gameOver, move]);
 

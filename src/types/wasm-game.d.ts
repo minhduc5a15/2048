@@ -23,6 +23,7 @@ interface WasmModule {
     Left: 2;
     Right: 3;
   };
+  isTableInitialized: () => boolean;
 }
 
 interface Window {
