@@ -108,7 +108,6 @@ function App() {
                     <p className="text-[#776e65] text-xs sm:text-sm font-medium opacity-80">Join the tiles, get to 2048!</p>
                     <div className="flex gap-2 ml-auto">
                         <button
-                            disabled={true}
                             onClick={() => setIsAutoPlaying(!isAutoPlaying)}
                             className={`font-bold py-1.5 px-3 rounded text-sm sm:text-base transition-all transform active:scale-95 shadow-sm border-b-2 whitespace-nowrap cursor-pointer ${
                                 isAutoPlaying
